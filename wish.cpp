@@ -56,27 +56,58 @@
 #include <iostream>
 #include <cstring>
 #include <string>
+#include <fstream>
+#include <vector>
+#include "batchCommand.h"
 
-using namespace std;
+void runInteractiveMode(void);
+void runBatchModeOn(std::string fileName);
+void outputError(bool forceExit);
 
 int main(int argc, char *argv[])
-{
-	// std::string currentPath = "/bin";
-	// char* const parm_list[] = { strdup("/bin/ls"), strdup("-a"), strdup("/mnt/c/Users/Noah/Google Drive/School/2020-2021/ECS150/projects/project2/processes-shell"), NULL };
-	// execv("/bin/ls", parm_list);
-	
+{	
 	if (argc == 1)
-	{
-		//todo interactive mode
-		
-	}
+		runInteractiveMode();
 	else if (argc > 2)
+		outputError(true);
+	else 
+		runBatchModeOn(argv[1]);
+	return 0;
+}
+
+
+void runInteractiveMode(void) 
+{
+	//TODO: Interactive Mode
+}
+
+
+void runBatchModeOn(std::string fileName)
+{
+	std::ifstream batchFile;
+	batchFile.open(fileName, std::fstream::in);
+	wish::BatchCommand *command = NULL;
+	if (batchFile.is_open()) 
 	{
-		//todo too many args. Return error and exit
+		for (std::string batchCommandLine; getline(batchFile, batchCommandLine);) 
+		{
+			command = new wish::BatchCommand(batchCommandLine);
+			bool commandSucceeded = command->executeBatchCommand();
+			delete(command);
+			if (!commandSucceeded)
+				outputError(false);
+		}
 	}
 	else 
-	{
-		//todo batch mode
-	}
-	return 0;
+		outputError(true);
+}
+
+
+void outputError(bool forceExit) 
+{
+	char error_message[30] = "An error has occurred\n";
+	write(STDERR_FILENO, error_message, strlen(error_message));
+
+	if (forceExit) 
+		exit(1);
 }

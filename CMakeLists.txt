@@ -1,11 +1,13 @@
-﻿# CMakeList.txt : CMake project for wish, include source and define
-# project specific logic here.
-#
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required(VERSION 3.0.0)
+project(wish VERSION 0.1.0)
 
-project ("wish")
+include(CTest)
+enable_testing()
 
-# Add source to this project's executable.
-add_executable (wish "wish.cpp")
+# add_executable(batchCommand batchCommand.cpp)
+set(SOURCES wish.cpp batchCommand.cpp batchCommand.h)
+add_executable(wish ${SOURCES})
 
-# TODO: Add tests and install targets if needed.
+set(CPACK_PROJECT_NAME ${PROJECT_NAME})
+set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
+include(CPack)

@@ -361,3 +361,11 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Ignored Manually
+/build
+test_in.txt
+.vscode/c_cpp_properties.json
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
