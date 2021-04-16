@@ -6,6 +6,8 @@
 #include <cstring>
 #include <vector>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 namespace wish 
 {
@@ -29,10 +31,12 @@ namespace wish
 
         private:
             void parseBatchCommand(std::string batchCommand);
-            std::string fixRepeatingWhiteSpace(std::string batchCommand);
+            std::string parseAndFix(std::string batchCommand);
             void setExecutionDirectory(std::string newExecDirectory);
             char* const* getExecArgs();
-            void executeBuiltIn();
+            bool CDHasArgErrors() const;
+            bool exitHasArgErrors() const;
+            bool executeBuiltIn();
     };
 }
 

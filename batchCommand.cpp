@@ -6,7 +6,10 @@ namespace wish
     {
         this->EXEC_DIRECTORY = "/bin";
         this->args = NULL;
-        parseBatchCommand(fixRepeatingWhiteSpace(BatchCommandLine));
+        this->isBuiltIn = false;
+        parseBatchCommand(parseAndFix(BatchCommandLine));
+        if (!(this->command.compare("exit") && this->command.compare("cd") && this->command.compare("path")))
+            this->isBuiltIn = true;
     }
     
     BatchCommand::~BatchCommand() 
@@ -19,12 +22,30 @@ namespace wish
     {
         if (!this->isBuiltIn) 
         {
-            // std::string execPath = this->EXEC_DIRECTORY + "/" + this->command;
-            char* const* execArgs = getExecArgs();
-            execv(execArgs[0], execArgs);
+            pid_t pid = fork();
+            if (pid < 0) //fork failed
+                return false;
+            else if (pid == 0)
+            {
+                std::string execPath = this->EXEC_DIRECTORY + "/" + this->command;
+                char* const* execArgs = getExecArgs();
+                execv(execPath.c_str(), execArgs);
+                char error_message[30] = "An error has occurred\n";
+                write(STDERR_FILENO, error_message, strlen(error_message));
+                exit(1);
+            }
+            else
+            {
+                if (wait(NULL) == -1)
+                    return false;
+            }
+            
         }
         else 
-            executeBuiltIn();
+        {
+            //TODO: Check Builtins for argument errors
+            return executeBuiltIn();
+        }
 
         return true;
     }
@@ -74,7 +95,7 @@ namespace wish
         
     }
     
-    std::string BatchCommand::fixRepeatingWhiteSpace(std::string batchCommand) 
+    std::string BatchCommand::parseAndFix(std::string batchCommand) 
     {
         std::string fixedBatchCommand = "";
         char crntChar;
@@ -83,19 +104,23 @@ namespace wish
         for (std::string::const_iterator it = batchCommand.begin(); it != batchCommand.end(); ++it)
         {
             crntChar = *it.base();
-            if (std::isblank(crntChar) && lastAdded != ' ') 
+            if (crntChar == ' ' ||  crntChar == '\t' || crntChar == '\r' || crntChar == '\0') 
             {
-                fixedBatchCommand += ' ';
-                lastAdded = ' ';
+                if (lastAdded != ' ')
+                {
+                    fixedBatchCommand += ' ';
+                    lastAdded = ' ';
+                }
             }
-            else if (!std::isblank(crntChar))
+            else
             {
                 fixedBatchCommand += crntChar;
                 lastAdded = crntChar;
             }
         }
         //End with an extra white space to simplify parse code
-        fixedBatchCommand += ' ';
+        if (lastAdded != ' ')
+            fixedBatchCommand += ' ';
         return fixedBatchCommand;
     }
     
@@ -108,8 +133,7 @@ namespace wish
     {
         //FIXME: This may need fixing
         char ** argsAsCStrings = new char*[this->args->size() + 2];
-        std::string execPath = this->EXEC_DIRECTORY + "/" + this->command;
-        argsAsCStrings[0] = strdup(execPath.c_str());
+        argsAsCStrings[0] = strdup(this->command.c_str());
         size_t i = 1;
         for (std::vector<std::string>::iterator it = this->args->begin(); it != this->args->end(); ++it) 
         {
@@ -120,18 +144,39 @@ namespace wish
         return argsAsCStrings;
     }
     
-    void BatchCommand::executeBuiltIn() 
+    bool BatchCommand::CDHasArgErrors() const
     {
-        const char* builtInCommand = this->command.c_str();
-        if (builtInCommand == "cd") 
+        return (this->args->size() == 0 || this->args->size() > 1);
+    }
+    
+    bool BatchCommand::exitHasArgErrors() const
+    {
+        return this->args->size() > 0;
+    }
+    
+    bool BatchCommand::executeBuiltIn() 
+    {
+        if (!this->command.compare("cd")) 
         {
             //TODO: built in cd function
+            if (CDHasArgErrors())
+                return false;
+            const char* newDir = this->args->at(0).c_str();
+            if (chdir(newDir))
+                return false;
         }
-        else if (builtInCommand == "path")
+        else if (!this->command.compare("path")) 
         {
             //TODO: built in path function
         }
-        else
+        else if (!this->command.compare("exit")) 
+        {
+            if (exitHasArgErrors())
+                return false;
             exit(0);
+        }
+        else
+            return false;
+        return true;
     }
 }

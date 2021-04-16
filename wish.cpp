@@ -28,6 +28,13 @@
 // `path` command always overwrites the old path with the newly specified
 // path.
 
+//Your shell will also allow the user to launch parallel commands. This is
+// accomplished with the ampersand operator as follows:
+	// ```
+	// wish> cmd1 & cmd2 args1 args2 & cmd3 args1
+	// ```
+//Do this using fork() and wait() or waitpid() so that all commannds run in parallel
+
 
 // Implement '>' charater which writes output to file instead of terminal.
 // * If the file already exists, overwrite it.
@@ -103,11 +110,11 @@ void runBatchModeOn(std::string fileName)
 }
 
 
-void outputError(bool forceExit) 
+void outputError(bool forceErrExit) 
 {
 	char error_message[30] = "An error has occurred\n";
 	write(STDERR_FILENO, error_message, strlen(error_message));
 
-	if (forceExit) 
+	if (forceErrExit) 
 		exit(1);
 }
